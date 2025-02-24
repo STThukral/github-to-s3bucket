@@ -1,56 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Resources:
-  MyS3uniqueBucket:
+  MyS3Bucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: my-s3-st-unique-bucket
-      NotificationConfiguration:
-        LambdaConfigurations:
-          - Event: s3:ObjectCreated:*
-            Function: arn:aws:lambda:eu-west-2:277707117797:function:MyLambdaFunction
-
-  MyLambdaFunction:
-    Type: AWS::Lambda::Function
-    Properties:
-      FunctionName: MyLambdaFunction
-      Handler: index.handler
-      Role:
-        Fn::GetAtt: [LambdaExecutionRole, Arn]
-      Code:
-        ZipFile: |
-          import json
-          def handler(event, context):
-              print('S3 Event:', json.dumps(event, indent=2))
-              return {
-                  'statusCode': 200,
-                  'body': json.dumps('Lambda function executed successfully')
-              }
-
-  LambdaExecutionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Action: "sts:AssumeRole"
-            Principal:
-              Service: "lambda.amazonaws.com"
-            Effect: "Allow"
-      Policies:
-        - PolicyName: LambdaS3ExecutionPolicy
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Action:
-                  - "s3:GetObject"
-                Effect: "Allow"
-                Resource: "arn:aws:s3:::my-s3-st-unique-bucket/*"
-              - Action:
-                  - "logs:*"
-                Effect: "Allow"
-                Resource: "*"
-
-Outputs:
-  LambdaFunction:
-    Description: "Lambda function ARN"
-    Value: !GetAtt MyLambdaFunction.Arn
+      BucketName: my-unique-s3-bucket-20250224
