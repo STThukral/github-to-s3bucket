@@ -44,7 +44,7 @@ Resources:
               - Action:
                   - "s3:GetObject"
                 Effect: "Allow"
-                Resource: "arn:aws:s3:::my-s3-bucket/*"
+                Resource: "arn:aws:s3:::my-s3-st-unique-bucket/*"
               - Action:
                   - "logs:*"
                 Effect: "Allow"
