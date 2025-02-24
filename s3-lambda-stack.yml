@@ -1,0 +1,101 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  
+  # S3 Bucket
+  MyS3Bucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: 'st-git-bucket'  # Change this to your unique bucket name
+      NotificationConfiguration:
+        EventBridgeConfiguration: {}
+
+  # Lambda Execution Role (with permissions to read S3 and write to CloudWatch)
+  LambdaExecutionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Action: 'sts:AssumeRole'
+            Principal:
+              Service: 'lambda.amazonaws.com'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+      Policies:
+        - PolicyName: 'S3ReadPolicy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 's3:GetObject'
+                Resource: !Sub 'arn:aws:s3:::${MyS3Bucket}/*'
+
+  # Lambda Function
+  MyLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      FunctionName: 'S3EventProcessorLambda'
+      Handler: 'index.handler'
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Runtime: 'python'  # You can use other runtimes such as python, java, etc.
+      Code:
+        ZipFile: |
+          Code:
+  ZipFile: |
+    import json
+    import boto3
+    from urllib.parse import unquote_plus
+
+    # Initialize AWS services
+    s3 = boto3.client('s3')
+    sns = boto3.client('sns')
+
+    def lambda_handler(event, context):
+        # Log the entire event (useful for debugging)
+        print('S3 Event:', json.dumps(event, indent=2))
+
+        # Extract the bucket name and object key (file name) from the event
+        bucket_name = event['Records'][0]['s3']['bucket']['name']
+        object_key = unquote_plus(event['Records'][0]['s3']['object']['key'])  # URL decode the object key
+
+        print(f"Bucket: {bucket_name}")
+        print(f"Object Key: {object_key}")
+
+        try:
+            # Retrieve the object from S3
+            response = s3.get_object(Bucket=bucket_name, Key=object_key)
+            file_size = response['ContentLength']  # Get the file size
+            print(f"File Size: {file_size} bytes")
+
+            # Example: Send a notification to an SNS topic
+            sns_message = {
+                'Message': f"New file uploaded to S3: {object_key}. File size: {file_size} bytes.",
+            }
+            sns.publish(**sns_message)
+
+            # You can add additional custom processing logic here (e.g., file processing)
+            # Example: Process an image, parse a CSV, or analyze the file content.
+
+            return {
+                'statusCode': 200,
+                'body': json.dumps({'message': 'File processed successfully!'})
+            }
+        
+        except Exception as e:
+            print(f"Error processing file: {str(e)}")
+            return {
+                'statusCode': 500,
+                'body': json.dumps({'message': 'Failed to process file'})
+            }
+
+  # S3 Bucket Notification to trigger Lambda on object creation
+  S3BucketNotification:
+    Type: 'AWS::S3::BucketNotification'
+    Properties:
+      Bucket: !Ref MyS3Bucket
+      NotificationConfiguration:
+        LambdaConfigurations:
+          - Event: 's3:ObjectCreated:*'
+            Function: !GetAtt MyLambdaFunction.Arn
