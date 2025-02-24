@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Resources:
-  MyS3Bucket:
+  MyS3uniqueBucket:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: my-s3-st-unique-bucket
