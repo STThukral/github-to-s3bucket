@@ -41,8 +41,6 @@ Resources:
       Role: !GetAtt LambdaExecutionRole.Arn
       Runtime: 'python'  # You can use other runtimes such as python, java, etc.
       Code:
-        ZipFile: |
-          Code:
   ZipFile: |
     import json
     import boto3
@@ -72,6 +70,7 @@ Resources:
             # Example: Send a notification to an SNS topic
             sns_message = {
                 'Message': f"New file uploaded to S3: {object_key}. File size: {file_size} bytes.",
+                'TopicArn': 'arn:aws:sns:us-east-1:123456789012:MySNSTopic',  # Replace with your SNS topic ARN
             }
             sns.publish(**sns_message)
 
@@ -89,6 +88,7 @@ Resources:
                 'statusCode': 500,
                 'body': json.dumps({'message': 'Failed to process file'})
             }
+
 
   # S3 Bucket Notification to trigger Lambda on object creation
   S3BucketNotification:
