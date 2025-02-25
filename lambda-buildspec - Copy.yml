@@ -1,0 +1,54 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  MyLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      FunctionName: st-MyPythonLambda
+      Handler: lambda_function.lambda_handler  # The entry point for your Lambda function
+      Role:
+        Fn::GetAtt:
+          - LambdaExecutionRole
+          - Arn  # The IAM role for Lambda execution
+      Code:
+        ZipFile: |
+          import json
+
+          def lambda_handler(event, context):
+              # Example Lambda code in Python
+              response = {
+                  "statusCode": 200,
+                  "body": json.dumps("Hello, World from Python Lambda!")
+              }
+              return response
+      Runtime: python3.8  # Lambda runtime for Python
+      MemorySize: 128  # Optional: Set the memory for the Lambda function
+      Timeout: 10  # Optional: Set the timeout for the Lambda function
+
+  LambdaExecutionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service: 'lambda.amazonaws.com'
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: LambdaExecutionPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 'logs:*'  # Permissions to create logs in CloudWatch
+                Resource: 'arn:aws:logs:*:*:*'
+              #- Effect: 'Allow'
+              #  Action:
+              #    - 's3:GetObject'  # Permissions to access S3, if needed
+              #  Resource: 'arn:aws:s3:::my-lambda-code-bucket/*'  # Replace with your S3 bucket ARN
+
+Outputs:
+  LambdaFunctionName:
+    Value: !Ref MyLambdaFunction
+    Description: "Lambda Function Name"
